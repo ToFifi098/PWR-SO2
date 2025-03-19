@@ -30,15 +30,30 @@ Każdy semafor posiada parametr `count` który odpowiada za ilość dostępnych 
 #### Widelce
 Każdy widelec może być podniesiony maksymalnie przez jednego filozofa jednocześnie. Ale do zjedzenia posiłku potrzebuje dwóch.
 
-Poprzez blokowanie dostępu do widelców 
+Poprzez blokowanie dostępu do widelców
 ```
 forks[leftFork].wait();
 forks[rightFork].wait();
 ```
 zostaje zapewnione, że każdy widelec jest podniesiony tylko przez jednego filozofa.
 
+Następnie po zjedzeniu posiłku zostaje on odblokowany.
+```
+forks[leftFork].signal();
+forks[rightFork].signal();
+```
+
 Aby nie doszło do trwałego zablokowania programu, do stołu dopuszczane jest maksymalnie `N - 1` filozofów jednocześnie.
 Gwarantuje to, że zawsze istnieją minimum dwa widelce do podniesienia przez któregoś z filozofów.
+
+Przed podniesieniem widelców, filozof sprawdza czy przy stole jest dla niego miejsce,
+```
+diningPhilosophers.wait();
+```
+jeżeli nie ma to czega na jego zwolnienie, po czym po spożytym posiłku je zwalnia
+```
+diningPhilosophers.signal();
+```
 
 #### Strumień wyjściowy
 W celu zapewnienia poprawnego wyświetlania postępu programu
