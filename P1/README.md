@@ -20,7 +20,7 @@ N filozofów siedzi przy stole i każdy wykonuje jedną z dwóch czynności – 
 
 ### Wątki w programie
 
-W programie elementem wykonywanym wspóbierznie jest element jedzenia, podnoszenia widelców, przez każdy wątek, który reprezentuje jednego filozofa.
+W programie elementem wykonywanym wspóbieżnie jest element jedzenia, podnoszenia widelców, przez każdy wątek, który reprezentuje jednego filozofa.
 
 Do rozwiązania problemu synchronizacji został wykorzystany mechanizm Semaforów Liczących.
 
