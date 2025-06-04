@@ -16,27 +16,28 @@ chat_client.cpp – Klient czatu, który łączy się z serwerem, wysyła wiadom
 
 Serwer (chat_server.cpp)
 
-Nasłuchuje na porcie 12345.
+•	Nasłuchuje na porcie 12345.
 
-Przyjmuje maksymalnie MAX_CLIENTS (domyślnie 10) jednoczesnych klientów.
+•	Przyjmuje maksymalnie MAX_CLIENTS (domyślnie 10) jednoczesnych klientów.
 
-Odbiera od każdego klienta jego pseudonim.
+•	Odbiera od każdego klienta jego pseudonim.
 
-Każdy klient jest obsługiwany w osobnym wątku (CreateThread).
+•	Każdy klient jest obsługiwany w osobnym wątku (CreateThread).
 
-Wiadomości od jednego klienta są broadcastowane do wszystkich pozostałych.
+•	Wiadomości od jednego klienta są broadcastowane do wszystkich pozostałych.
+
 
 Klient (chat_client.cpp)
 
-Łączy się z serwerem (domyślnie 127.0.0.1:12345).
+•	Łączy się z serwerem (domyślnie 127.0.0.1:12345).
 
-Wysyła pseudonim.
+•	Wysyła pseudonim.
 
-Uruchamia osobny wątek do odbierania wiadomości.
+•	Uruchamia osobny wątek do odbierania wiadomości.
 
-Pozwala użytkownikowi pisać i wysyłać wiadomości w czasie rzeczywistym.
+•	Pozwala użytkownikowi pisać i wysyłać wiadomości w czasie rzeczywistym.
 
-Komenda /exit kończy połączenie.
+•	Komenda /exit kończy połączenie.
 
 ## Najważniejsze części kodu i funkcje
 
@@ -47,8 +48,11 @@ Funkcja ta zabezpieczona jest przed równoczesnym dostępem przez użycie mechan
 `client_handler(LPVOID lpParam)`
 
 Wątek uruchamiany dla każdego klienta. Obsługuje:
+
 •	rejestrację klienta (przyjęcie pseudonimu),
+
 •	odbieranie i przekazywanie wiadomości,
+
 •	usuwanie klienta po jego rozłączeniu.
 
 `lock()` i `unlock()`
