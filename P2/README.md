@@ -1,6 +1,5 @@
 # Prosty system chatu klient-serwer
-### Filip Zmyślony
-### Julia Sujka
+### Filip Zmyślony, Julia Sujka
 
 ## Uruchomienie programu
 
