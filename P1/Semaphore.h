@@ -1,52 +1,32 @@
-//
-// Created by Filip on 19.03.2025.
-//
-
 #ifndef P1_SEMAPHORE_H
 #define P1_SEMAPHORE_H
 
+#include <mutex>
+#include <thread>
 
 class Semaphore {
 private:
-    volatile int count;
-    volatile bool locked;
+    int count;
+    std::mutex mtx;
 
 public:
-    explicit Semaphore(int count) : count(count), locked(false) {}
-
-    void lock() {
-        while (true) {
-            if (!locked) {
-                locked = true;
-                return;
-            }
-            std::this_thread::yield();
-        }
-    }
-
-    void unlock() {
-        locked = false;
-    }
+    explicit Semaphore(int count) : count(count) {}
 
     void wait() {
         while (true) {
-            lock();
+            std::lock_guard<std::mutex> lock(mtx);
             if (count > 0) {
-                count -= 1;
-                unlock();
+                --count;
                 return;
             }
-            unlock();
             std::this_thread::yield();
         }
     }
 
     void signal() {
-        lock();
-        count += 1;
-        unlock();
+        std::lock_guard<std::mutex> lock(mtx);
+        ++count;
     }
 };
-
 
 #endif //P1_SEMAPHORE_H
