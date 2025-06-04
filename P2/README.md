@@ -41,44 +41,67 @@ chat_client.cpp – Klient czatu, który łączy się z serwerem, wysyła wiadom
 
 ## Najważniejsze części kodu i funkcje
 
-`broadcast(const std::string& message, SOCKET sender)`
-Rozsyła wiadomość do wszystkich klientów oprócz nadawcy. 
-Funkcja ta zabezpieczona jest przed równoczesnym dostępem przez użycie mechanizmu synchronizacji 
-(lock() / unlock()), ponieważ może być wywoływana równocześnie przez wiele wątków.
-`client_handler(LPVOID lpParam)`
+### Definicje i struktury
+```
+#define MAX_CLIENTS 10
+#define PORT 12345
 
-Wątek uruchamiany dla każdego klienta. Obsługuje:
+struct Client {
+    SOCKET socket;
+    std::string nickname;
+};
+```
+Definiujemy liczbę maksymalnych klientów oraz port, na którym działa serwer. 
+Struktura ‘client’ przechowuje dane dla każdego klienta takie jak identyfikator połączenia oraz nickname. 
 
-•	rejestrację klienta (przyjęcie pseudonimu),
+### Synchronizacja wątków
 
-•	odbieranie i przekazywanie wiadomości,
+```
+void lock() {
+    while (InterlockedCompareExchange(&mutex, 1, 0) != 0) {
+        Sleep(1);
+    }
+}
 
-•	usuwanie klienta po jego rozłączeniu.
+void unlock() {
+    InterlockedExchange(&mutex, 0);
+}
+```
 
-`lock()` i `unlock()`
+`lock()` – ustawia mutex na 1 tylko wtedy, gdy był równy 0 (czyli był wolny).
+`unlock()` – zwalnia dostęp, ustawiając mutex z powrotem na 0.
+Zabezpiecza sekcje krytyczne: np. dodawanie/usuwanie klienta lub broadcast wiadomości.
 
-Prosty mechanizm sekcji krytycznej:
+### Broadcast wiadomości
 
-•	`InterlockedCompareExchange` sprawdza i ustawia zmienną mutex, blokując inne wątki.
+```
+void broadcast(const std::string& message, SOCKET sender) {
+    lock();
+    for (int i = 0; i < client_count; ++i) {
+        if (clients[i].socket != sender) {
+            send(clients[i].socket, message.c_str(), message.size(), 0);
+        }
+    }
+    unlock();
+}
+```
 
-•	`Sleep(1)` w pętli zapobiega zużyciu 100% CPU.
+Wysyła wiadomość message do wszystkich klientów poza nadawcą. Chroniona `lock()` zapobiega równoczesnemu wysyłaniu przez wiele wątków.
 
-•	`unlock()` resetuje mutex.
+### Obsługa klienta
 
-Dzięki temu tylko jeden wątek może w danej chwili:
+```
+SOCKET client_socket = (SOCKET)lpParam;
+char buffer[1024];
+int recv_size;
 
-•	modyfikować listę klientów (clients),
+recv_size = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+if (recv_size <= 0) return 1;
+buffer[recv_size] = '\0';
+std::string nickname(buffer);
+```
 
-•	zmieniać wartość `client_count`,
-
-•	nadawać wiadomości (aby uniknąć kolizji przy `send()`).
-
-• `get_timestamp()` - Zwraca aktualną godzinę w formacie [HH:MM:SS], która jest dołączana do każdej wiadomości.
-
-## Sekcje krytyczne
-
-W programie zastosowano ręczną synchronizację wątków przy użyciu zmiennej volatile LONG mutex.
-Przykłady użycia:
+Oczekuje pierwszej wiadomości – pseudonimu. Jeśli recv zwraca <=0, klient się nie połączył prawidłowo kończy obsługę.
 
 ```
 lock();
@@ -86,15 +109,49 @@ clients[client_count++] = { client_socket, nickname };
 unlock();
 ```
 
+Dodaje nowego klienta do listy w sposób bezpieczny wątkowo.
+
 ```
+while ((recv_size = recv(client_socket, buffer, sizeof(buffer) - 1, 0)) > 0) {
+    buffer[recv_size] = '\0';
+    std::string msg = get_timestamp() + nickname + ": " + buffer + "\n";
+    broadcast(msg, client_socket);
+    std::cout << msg;
+}
+```
+Odbiera dane od klienta w pętli. Każdą wiadomość opatruje pseudonimem i timestampem. Przesyła ją dalej do pozostałych.
+
+```
+std::string leave_msg = get_timestamp() + nickname + " left the chat.\n";
+
 lock();
 for (int i = 0; i < client_count; ++i) {
-    if (clients[i].socket != sender) {
-        send(clients[i].socket, message.c_str(), message.size(), 0);
+    if (clients[i].socket == client_socket) {
+        clients[i] = clients[client_count - 1];
+        client_count--;
+        break;
     }
 }
 unlock();
+
+broadcast(leave_msg, client_socket);
+std::cout << leave_msg;
+
+closesocket(client_socket);
+return 0;
 ```
-Wiele wątków działa równolegle – każdy klient ma własny wątek. Bez synchronizacji mogłoby dojść do błędów wyścigu, 
-możliwy byłby błąd w indeksowaniu tablicy klientów, dane mogłyby być uszkodzone (np. nadpisane lub utracone).
+
+Po zerwaniu połączenia usuwa klienta z tablicy (swap with last). Powiadamia pozostałych o jego wyjściu oraz zamyka socket i kończy wątek.
+
+
+### Główna pętla akceptowania klientów
+
+```
+while ((client_socket = accept(server_socket, (struct sockaddr*)&client, &c))) {
+    CreateThread(NULL, 0, client_handler, (LPVOID)client_socket, 0, NULL);
+}
+```
+
+Akceptuje nowe połączenie. Tworzy nowy wątek dla każdego klienta (CreateThread z client_handler).
+
 
