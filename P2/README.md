@@ -4,6 +4,7 @@
 
 ## Uruchomienie programu
 
+Program musi być uruchomiony na systemie Windows z użyciem MinGW.
 ```
 g++ client.cpp -o client -lws2_32 
 g++ server.cpp -o server-lws2_32
