@@ -26,7 +26,7 @@ chat_client.cpp – Klient czatu, który łączy się z serwerem, wysyła wiadom
 
 •	Nasłuchuje na porcie 12345.
 
-•	Przyjmuje maksymalnie MAX_CLIENTS (domyślnie 10) jednoczesnych klientów.
+•	Przyjmuje maksymalnie 10 jednoczesnych klientów.
 
 •	Odbiera od każdego klienta jego pseudonim.
 
@@ -48,19 +48,7 @@ chat_client.cpp – Klient czatu, który łączy się z serwerem, wysyła wiadom
 •	Komenda /exit kończy połączenie.
 
 ## Najważniejsze części kodu i funkcje
-
-### Definicje i struktury
-```
-#define MAX_CLIENTS 10
-#define PORT 12345
-
-struct Client {
-    SOCKET socket;
-    std::string nickname;
-};
-```
-Definiujemy liczbę maksymalnych klientów oraz port, na którym działa serwer. 
-Struktura ‘client’ przechowuje dane dla każdego klienta takie jak identyfikator połączenia oraz nickname. 
+## Server
 
 ### Synchronizacja wątków
 
@@ -162,4 +150,36 @@ while ((client_socket = accept(server_socket, (struct sockaddr*)&client, &c))) {
 
 Akceptuje nowe połączenie. Tworzy nowy wątek dla każdego klienta (CreateThread z client_handler).
 
+
+## Klient
+
+### Uruchomienie klienta
+
+```
+WSADATA wsa;
+SOCKET s;
+struct sockaddr_in server;
+
+WSAStartup(MAKEWORD(2, 2), &wsa);
+s = socket(AF_INET, SOCK_STREAM, 0);
+```
+Inicjalizacja biblioteki Winsock oraz utworzenie socketu klienta TCP (SOCK_STREAM).
+
+### Konfiguracja i połączenie
+
+```
+server.sin_addr.s_addr = inet_addr(SERVER);
+server.sin_family = AF_INET;
+server.sin_port = htons(PORT);
+
+connect(s, (struct sockaddr*)&server, sizeof(server));
+```
+Ustawia dane serwera (adres IP i port) oraz nawiązuje połączenie z serwerem (connect).
+
+### Uruchomienie wątku odbierającego
+
+```
+std::thread recv_thread(receive_messages, s);
+```
+Tworzy nowy wątek do odbioru wiadomości w czasie rzeczywistym, bez blokowania wpisywania.
 
