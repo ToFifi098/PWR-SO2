@@ -14,7 +14,7 @@ chat_client.cpp – Klient czatu, który łączy się z serwerem, wysyła wiadom
 
 ## Jak działa
 
-Serwer (chat_server.cpp)
+### Serwer (chat_server.cpp)
 
 •	Nasłuchuje na porcie 12345.
 
@@ -27,7 +27,7 @@ Serwer (chat_server.cpp)
 •	Wiadomości od jednego klienta są broadcastowane do wszystkich pozostałych.
 
 
-Klient (chat_client.cpp)
+### Klient (chat_client.cpp)
 
 •	Łączy się z serwerem (domyślnie 127.0.0.1:12345).
 
