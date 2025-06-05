@@ -71,7 +71,7 @@ DWORD WINAPI client_handler(LPVOID lpParam) {
     // Odbierz pseudonim klienta
     recv_size = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
     if (recv_size <= 0) return 1;  // Jeśli błąd, zakończ wątek
-    buffer[recv_size] = '\0';      // Dodaj znak końca stringa
+    buffer[recv_size] = '\0';
     std::string nickname(buffer);  // Zapisz pseudonim
 
     // Dodaj klienta do listy
