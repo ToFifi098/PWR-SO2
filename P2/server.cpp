@@ -25,7 +25,7 @@ Client clients[MAX_CLIENTS];  // Tablica przechowująca klientów
 int client_count = 0;         // Liczba aktualnie podłączonych klientów
 volatile LONG mutex = 0;      // Zmienna do synchronizacji wątków
 
-// Funkcja blokująca dostęp do zasobów współdzielonych
+// Funkcja blokująca dostęp do zasobów współdzielonych (zmienna atomowa)
 void lock() {
     // Czekaj aż mutex będzie równy 0 i ustaw go na 1
     while (InterlockedCompareExchange(&mutex, 1, 0) != 0) {
@@ -49,7 +49,7 @@ std::string get_timestamp() {
 
 // Funkcja rozsyłająca wiadomość do wszystkich klientów oprócz nadawcy
 void broadcast(const std::string& message, SOCKET sender) {
-    lock();  // Zablokuj dostęp do tablicy klientów
+    lock();  // Zablokuj dostęp do tablicy klientów (Iteruje po liście klientów, która może się zmieniać)
 
     // Przeiteruj przez wszystkich klientów
     for (int i = 0; i < client_count; ++i) {
@@ -74,7 +74,7 @@ DWORD WINAPI client_handler(LPVOID lpParam) {
     buffer[recv_size] = '\0';
     std::string nickname(buffer);  // Zapisz pseudonim
 
-    // Dodaj klienta do listy
+    // Dodaj klienta do listy (Wiele wątków może jednocześnie próbować dodać klienta)
     lock();
     clients[client_count++] = { client_socket, nickname };
     unlock();
