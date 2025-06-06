@@ -52,19 +52,25 @@ chat_client.cpp – Klient czatu, który łączy się z serwerem, wysyła wiadom
 ### Synchronizacja wątków
 
 ```
-void lock() {
-    while (InterlockedCompareExchange(&mutex, 1, 0) != 0) {
-        Sleep(1);
+    void wait() {
+        while (true) {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (count > 0) {
+                --count;
+                return;
+            }
+            std::this_thread::yield();
+        }
     }
-}
 
-void unlock() {
-    InterlockedExchange(&mutex, 0);
-}
+    void signal() {
+        std::lock_guard<std::mutex> lock(mtx);
+        ++count;
+    }
 ```
 
-`lock()` – ustawia mutex na 1 tylko wtedy, gdy był równy 0 (czyli był wolny).
-`unlock()` – zwalnia dostęp, ustawiając mutex z powrotem na 0.
+`wait()` – ustawia mutex na 1 tylko wtedy, gdy był równy 0 (czyli był wolny).
+`signal()` – zwalnia dostęp, ustawiając mutex z powrotem na 0.
 Zabezpiecza sekcje krytyczne: np. dodawanie/usuwanie klienta lub broadcast wiadomości.
 
 ### Broadcast wiadomości
@@ -99,9 +105,9 @@ std::string nickname(buffer);
 Oczekuje pierwszej wiadomości – pseudonimu. Jeśli recv zwraca <=0, klient się nie połączył prawidłowo kończy obsługę.
 
 ```
-lock();
+stdSemaphore.wait();
 clients[client_count++] = { client_socket, nickname };
-unlock();
+stdSemaphore.signal();
 ```
 
 Dodaje nowego klienta do listy w sposób bezpieczny wątkowo.
@@ -119,7 +125,7 @@ Odbiera dane od klienta w pętli. Każdą wiadomość opatruje pseudonimem i tim
 ```
 std::string leave_msg = get_timestamp() + nickname + " left the chat.\n";
 
-lock();
+stdSemaphore.wait();
 for (int i = 0; i < client_count; ++i) {
     if (clients[i].socket == client_socket) {
         clients[i] = clients[client_count - 1];
@@ -127,7 +133,7 @@ for (int i = 0; i < client_count; ++i) {
         break;
     }
 }
-unlock();
+stdSemaphore.signal();
 
 broadcast(leave_msg, client_socket);
 std::cout << leave_msg;
